@@ -10,6 +10,9 @@ RUN_ID = os.getenv("RUN_ID")
 LOKI_ENDPOINT = os.getenv("LOKI_ENDPOINT")
 LABELS = os.getenv("LABELS", "job=github-actions")
 GITHUB_REPO = os.getenv("GITHUB_REPOSITORY")
+MAX_RETRIES = int(os.getenv("MAX_RETRIES", 5))  # Defaults to 5 retries if not setup in the action
+RETRY_INTERVAL_SECONDS = int(os.getenv("RETRY_INTERVAL_SECONDS", 10))  # Defaults to 10 seconds if not setup in the action
+
 HEADERS = {"Authorization": f"Bearer {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
 
 def sanitize_labels(labels):
@@ -84,14 +87,14 @@ def main():
             continue
 
         logs_to_send = []
-        for attempt in range(1, 6):
-            print(f"Fetching logs for job ID: {job_id} (Attempt {attempt}/5)")
+        for attempt in range(1, MAX_RETRIES + 1):
+            print(f"Fetching logs for job ID: {job_id} (Attempt {attempt}/{MAX_RETRIES})")
             logs = fetch_job_logs(job_id)
             if logs:
                 logs_to_send.extend(logs)
                 break  # Stop retrying once logs are fetched
-            print(f"No logs available yet for job ID: {job_id}. Retrying in 10 seconds...")
-            time.sleep(10)
+            print(f"No logs available yet for job ID: {job_id}. Retrying in {RETRY_INTERVAL_SECONDS} seconds...")
+            time.sleep(RETRY_INTERVAL_SECONDS)
 
         if logs_to_send:
             print(f"Sending {len(logs_to_send)} log lines to Loki for job {name}...")

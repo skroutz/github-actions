@@ -11,6 +11,14 @@ inputs:
   github_token:
     description: "GitHub token for API authentication"
     required: true
+  max_retries:
+    description: "Maximum number of retry attempts for fetching logs"
+    required: false
+    default: "5"
+  retry_interval_seconds:
+    description: "Interval in seconds between retry attempts"
+    required: false
+    default: "10"
 
 runs:
   using: "composite"
@@ -28,4 +36,6 @@ runs:
         RUN_ID: ${{ github.run_id }}
         LOKI_ENDPOINT: ${{ inputs.loki_endpoint }}
         LABELS: ${{ inputs.labels }}
+        MAX_RETRIES: ${{ inputs.max_retries }}
+        RETRY_INTERVAL_SECONDS: ${{ inputs.retry_interval_seconds }}
       run: python3 ./send-logs-to-loki/push_logs.py

@@ -10,22 +10,27 @@ The **Send Logs to Loki** GitHub Action collects logs from all jobs in a GitHub 
 
 ## Inputs
 
-| Name            | Description                                              | Required | Default              |
-| --------------- | -------------------------------------------------------- | -------- | -------------------- |
-| `loki_endpoint` | Loki push endpoint                                       | Yes      |                      |
-| `labels`        | Custom labels for logs (comma-separated key=value pairs) | No       | job_id=<>``, job_name=<>` |
-| `github_token`  | GitHub token for API authentication                      | Yes      |                      |
+| Name                    | Description                                                | Required | Default              |
+| ----------------------- | -----------------------------------------------------------| -------- | -------------------- |
+| `loki_endpoint`         | Loki push endpoint                                         | Yes      |                      |
+| `labels`                | Custom labels for logs (comma-separated key=value pairs)   | No       | `job=github-actions` |
+| `github_token`          | GitHub token for API authentication                        | Yes      |                      |
+| `max_retries`           | Maximum number of retry attempts for fetching logs per job | No      |  5                   |
+| `retry_interval_seconds`| Interval in seconds between retry attempts                 | No      |  10                   |
 
 ## Example Usage
 
 ```yaml
-
-  - name: Send Logs to Loki
-    uses: skroutz/github-actions/send-logs-to-loki@latest
-    with:
-      loki_endpoint: "https://loki.example.com"
-      labels: "job=github-actions,run_id=${{ github.run_id }}"
-      github_token: ${{ secrets.GITHUB_TOKEN }}
+- name: Set up Python
+  uses: actions/setup-python@v4
+  with:
+    python-version: '3.x'
+- name: Send Logs to Loki
+  uses: skroutz/github-actions/send-logs-to-loki@latest
+  with:
+    loki_endpoint: "https://loki.example.com"
+    labels: "job=github-actions,run_id=${{ github.run_id }}"
+    github_token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ## How It Works
@@ -39,11 +44,22 @@ The **Send Logs to Loki** GitHub Action collects logs from all jobs in a GitHub 
 - **Add Custom Labels**: Use the `labels` input to include additional metadata for your logs.
   - Example: `labels: "job=github-actions,env=production"`
 - **Loki Endpoint**: Specify the Loki instance URL with `loki_endpoint`.
+- **Retry Configuration**: Use the `max_retries` and `retry_interval_seconds` inputs to control log fetch retry behavior.
 
 By default, the `job_id` and `job_name` are automatically added as labels for each job. (Be mindful of cardinality!)
+
+## Dependencies
+
+This action requires **Python 3**. It is recommended to use the [official GitHub action](https://github.com/actions/setup-python) to ensure the correct Python version is installed:
+
+```yaml
+- name: Set up Python
+  uses: actions/setup-python@v4
+  with:
+    python-version: '3.x'
+```
 
 ## Known Limitations
 
 - Logs are only fetched for completed jobs. Logs for in-progress jobs will be skipped.
-- Timestamps in Loki are processed as arrived. Therefore Loki timestamps are injected at time of transmision, along with Github Actions real Timestamps. 
-
+- Timestamps in Loki are processed as arrived. Therefore Loki timestamps are injected at the time of transmission, along with GitHub Actions real Timestamps.
